@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TTG-676211 — Frequency Cap (DAILY/HOURLY/LIFETIME)</title>
+    <style>
+      :root {
+        --bg-page: #e9eef7;
+        --bg-card: #f7f8fa;
+        --border: #d8dee8;
+        --text-main: #5f6a7a;
+        --text-muted: #8a94a5;
+        --input-border: #cfd6e2;
+        --active-bg: #e8f1ff;
+        --active-text: #2f75d6;
+        --inactive-bg: #f0f2f6;
+        --inactive-text: #9da7b7;
+        --danger: #e34857;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Arial, sans-serif;
+        background: var(--bg-page);
+        color: var(--text-main);
+      }
+
+      .page {
+        padding: 22px;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 980px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 18px 12px 16px;
+      }
+
+      .top-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .toggle {
+        position: relative;
+        width: 30px;
+        height: 20px;
+        border-radius: 999px;
+        border: 1px solid #cfd6e2;
+        background: #e3e8f1;
+        cursor: pointer;
+        transition: 0.2s ease;
+        padding: 0;
+      }
+
+      .toggle::after {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        left: 1px;
+        top: 1px;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+        transition: 0.2s ease;
+      }
+
+      .toggle.is-on {
+        background: #2f75d6;
+        border-color: #2f75d6;
+      }
+
+      .toggle.is-on::after {
+        left: 11px;
+      }
+
+      .title {
+        font-size: 13px;
+        color: #6b7686;
+      }
+
+      .label {
+        font-size: 10px;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-left: 10px;
+        margin-bottom: 4px;
+      }
+
+      .input-wrap {
+        position: relative;
+      }
+
+      .global-input {
+        width: 100%;
+        height: 34px;
+        border-radius: 3px;
+        border: 1px solid var(--input-border);
+        background: #fff;
+        color: #4f5a69;
+        font-size: 22px;
+        line-height: 1;
+        padding: 5px 120px 5px 10px;
+        outline: none;
+      }
+
+      .global-input:focus {
+        border-color: #7ba9f1;
+      }
+
+      .right-overlay {
+        position: absolute;
+        top: 0;
+        right: 8px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .counter {
+        color: var(--danger);
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+
+      .icon-btn {
+        width: 18px;
+        height: 18px;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: #7d8796;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .icon-btn:hover {
+        color: #4f5a69;
+      }
+
+      .controls {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .group {
+        display: inline-flex;
+        border: 1px solid #e1e6ef;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .btn {
+        border: 0;
+        border-right: 1px solid #e1e6ef;
+        height: 28px;
+        min-width: 44px;
+        padding: 0 10px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        color: var(--inactive-text);
+        background: var(--inactive-bg);
+        cursor: pointer;
+      }
+
+      .btn:last-child {
+        border-right: 0;
+      }
+
+      .btn.active {
+        background: var(--active-bg);
+        color: var(--active-text);
+      }
+
+      .card.is-disabled .content {
+        opacity: 0.55;
+      }
+
+      .card.is-disabled input,
+      .card.is-disabled button:not(.toggle) {
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="card" id="frequencyCard">
+        <div class="top-row">
+          <button class="toggle" id="toggleCap" aria-label="Frequency Cap toggle"></button>
+          <span class="title">Frequency Cap</span>
+        </div>
+
+        <div class="content">
+          <div class="label">Global Cap</div>
+          <div class="input-wrap">
+            <input class="global-input" id="globalCapInput" type="number" value="470" />
+            <div class="right-overlay">
+              <span class="counter">473</span>
+              <span class="counter">471</span>
+
+              <button
+                type="button"
+                class="icon-btn"
+                id="resetBtn"
+                title="Reset lifetime cap"
+                style="display: none"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <path d="M3.51 15a9 9 0 1 0 .49-9.36L1 10"></path>
+                </svg>
+              </button>
+
+              <button type="button" class="icon-btn" id="editBtn" title="Edit cap">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="controls">
+            <div class="group" id="periodGroup">
+              <button class="btn active" data-period="daily">DAILY</button>
+              <button class="btn" data-period="hourly">HOURLY</button>
+              <button class="btn" data-period="lifetime">LIFETIME</button>
+            </div>
+
+            <div class="group" id="actionGroup">
+              <button class="btn active" data-action="exclude">EXCLUDE</button>
+              <button class="btn" data-action="return">RETURN</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const state = {
+        enabled: false,
+        period: "daily",
+        action: "exclude"
+      };
+
+      const card = document.getElementById("frequencyCard");
+      const toggle = document.getElementById("toggleCap");
+      const globalCapInput = document.getElementById("globalCapInput");
+      const periodGroup = document.getElementById("periodGroup");
+      const actionGroup = document.getElementById("actionGroup");
+      const resetBtn = document.getElementById("resetBtn");
+
+      function render() {
+        toggle.classList.toggle("is-on", state.enabled);
+        card.classList.toggle("is-disabled", !state.enabled);
+
+        globalCapInput.disabled = !state.enabled;
+
+        [...periodGroup.querySelectorAll(".btn")].forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.period === state.period);
+          btn.disabled = !state.enabled;
+        });
+
+        [...actionGroup.querySelectorAll(".btn")].forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.action === state.action);
+          btn.disabled = !state.enabled;
+        });
+
+        resetBtn.style.display = state.period === "lifetime" ? "inline-flex" : "none";
+        resetBtn.disabled = !state.enabled;
+      }
+
+      toggle.addEventListener("click", () => {
+        state.enabled = !state.enabled;
+        render();
+      });
+
+      periodGroup.addEventListener("click", (event) => {
+        const btn = event.target.closest(".btn");
+        if (!btn || !state.enabled) return;
+        state.period = btn.dataset.period;
+        render();
+      });
+
+      actionGroup.addEventListener("click", (event) => {
+        const btn = event.target.closest(".btn");
+        if (!btn || !state.enabled) return;
+        state.action = btn.dataset.action;
+        render();
+      });
+
+      resetBtn.addEventListener("click", () => {
+        if (!state.enabled || state.period !== "lifetime") return;
+        globalCapInput.value = "";
+      });
+
+      render();
+    </script>
+  </body>
+  </html>
+
