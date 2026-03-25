@@ -26,3 +26,58 @@ MVP: Early Warning System (EWS) for traffic anomalies.
   - behavioral drop
   - new offer guardrail
 - Teams Power Automate payload formatter (with manager email routing)
+
+## Test with real data chunk (CSV/JSON)
+
+You can run the detector using real data export from your DB.
+
+### 1) Prepare history file
+
+File: `data/history.csv` (or `.json`)
+
+Required columns:
+- `offer_id`
+- `geo`
+- `day_of_week` (Monday=0 ... Sunday=6)
+- `slot_10m` (0..143, where `hour * 6 + minute // 10`)
+- `hits_10m`
+- `clicks_10m`
+
+### 2) Prepare current snapshot file
+
+File: `data/snapshot.csv` (or `.json`)
+
+Required columns:
+- `offer_id`
+- `offer_name`
+- `geo`
+- `day_of_week`
+- `slot_10m`
+- `hits_10m`
+- `clicks_10m`
+- `cap_counter`
+- `cap_limit`
+
+Optional column:
+- `declines_cap_reason_10m` (defaults to `0`)
+
+### 3) (Optional) manager mapping
+
+Create `data/manager_mapping.json`:
+
+```json
+{
+  "offer_activechannel": "ivan.ivanov@company.com",
+  "offer_other": "anna.petrova@company.com"
+}
+```
+
+### 4) Run
+
+```bash
+PYTHONPATH=src python run_mvp.py \
+  --mode files \
+  --history-file data/history.csv \
+  --snapshot-file data/snapshot.csv \
+  --manager-mapping-file data/manager_mapping.json
+```

@@ -1,0 +1,3 @@
+offer_id,offer_name,geo,day_of_week,slot_10m,hits_10m,clicks_10m,cap_counter,cap_limit,declines_cap_reason_10m
+offer_activechannel,ActiveChannel_CPC_Mob,US,1,84,60,0,100,1000,0
+offer_other,Other_Offer,US,1,84,20,16,300,1000,0
