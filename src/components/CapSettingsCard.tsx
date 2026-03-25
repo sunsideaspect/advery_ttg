@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Pencil, RotateCcw } from "lucide-react";
 
-type PeriodMode = "daily" | "hourly" | "lifetime";
+type PeriodMode = "daily" | "hourly" | "total";
 type ActionMode = "exclude" | "return";
 
 interface CapSettingsState {
@@ -21,17 +21,17 @@ interface CapSettingsCardProps {
   // For DAILY/HOURLY modes
   todayClicks?: number;
   yesterdayClicks?: number;
-  // For LIFETIME mode
-  lifetimeClicks?: number;
+  // For TOTAL mode
+  totalClicks?: number;
   onChange?: (nextState: CapSettingsState) => void;
   onEdit?: (nextCap: number) => void;
-  onResetLifetime?: () => void;
+  onResetTotal?: () => void;
 }
 
 const periodModes: Array<{ label: string; value: PeriodMode }> = [
   { label: "DAILY", value: "daily" },
   { label: "HOURLY", value: "hourly" },
-  { label: "LIFETIME", value: "lifetime" },
+  { label: "TOTAL", value: "total" },
 ];
 
 const actionModes: Array<{ label: string; value: ActionMode }> = [
@@ -58,10 +58,10 @@ export default function CapSettingsCard({
   initialAction = "exclude",
   todayClicks = 473,
   yesterdayClicks = 471,
-  lifetimeClicks = 800,
+  totalClicks = 800,
   onChange,
   onEdit,
-  onResetLifetime,
+  onResetTotal,
 }: CapSettingsCardProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [globalCap, setGlobalCap] = useState(String(initialGlobalCap));
@@ -77,9 +77,9 @@ export default function CapSettingsCard({
 
   const disabledUI = !enabled;
 
-  const handleLifetimeReset = () => {
-    onResetLifetime?.();
-    setWarningMessage("Lifetime counter was reset.");
+  const handleTotalReset = () => {
+    onResetTotal?.();
+    setWarningMessage("Total counter was reset.");
   };
 
   const tryApplyCapValue = (rawValue: string) => {
@@ -89,7 +89,7 @@ export default function CapSettingsCard({
       return;
     }
 
-    if (period === "lifetime" && parsed <= lifetimeClicks) {
+    if (period === "total" && parsed <= totalClicks) {
       const proceed = window.confirm(
         "You set cap below current spent clicks. Traffic will be stopped immediately. Continue?"
       );
@@ -170,8 +170,8 @@ export default function CapSettingsCard({
           />
 
           <div className="absolute inset-y-0 right-16 flex items-center gap-2 text-sm font-semibold text-red-500">
-            {period === "lifetime" ? (
-              <span>{lifetimeClicks}</span>
+            {period === "total" ? (
+              <span>{totalClicks}</span>
             ) : (
               <>
                 <span>{todayClicks}</span>
@@ -181,14 +181,14 @@ export default function CapSettingsCard({
           </div>
 
           <div className="absolute inset-y-0 right-3 flex items-center gap-1">
-            {period === "lifetime" && (
+            {period === "total" && (
               <button
                 type="button"
-                onClick={handleLifetimeReset}
+                onClick={handleTotalReset}
                 disabled={disabledUI}
                 className="rounded p-1 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 disabled:cursor-not-allowed"
-                aria-label="Reset lifetime cap"
-                title="Reset lifetime cap"
+                aria-label="Reset total cap"
+                title="Reset total cap"
               >
                 <RotateCcw size={14} />
               </button>

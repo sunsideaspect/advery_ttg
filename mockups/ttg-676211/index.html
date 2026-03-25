@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TTG-676211 — Cap Settings (DAILY/HOURLY/LIFETIME)</title>
+    <title>TTG-676211 — Cap Settings (DAILY/HOURLY/TOTAL)</title>
     <style>
       :root {
         --bg-page: #e9eef7;
@@ -226,7 +226,7 @@
                 type="button"
                 class="icon-btn"
                 id="resetBtn"
-                title="Reset lifetime cap"
+                title="Reset total cap"
                 style="display: none"
               >
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -249,7 +249,7 @@
             <div class="group" id="periodGroup">
               <button class="btn active" data-period="daily">DAILY</button>
               <button class="btn" data-period="hourly">HOURLY</button>
-              <button class="btn" data-period="lifetime">LIFETIME</button>
+              <button class="btn" data-period="total">TOTAL</button>
             </div>
 
             <div class="group" id="actionGroup">
@@ -269,7 +269,7 @@
         capValue: 470,
         spentToday: 473,
         spentYesterday: 471,
-        spentLifetime: 800
+        spentTotal: 800
       };
 
       const card = document.getElementById("capSettingsCard");
@@ -284,7 +284,7 @@
       const capWarning = document.getElementById("capWarning");
 
       function currentSpent() {
-        if (state.period === "lifetime") return state.spentLifetime;
+        if (state.period === "total") return state.spentTotal;
         return state.spentToday;
       }
 
@@ -295,8 +295,8 @@
         globalCapInput.value = String(state.capValue);
         globalCapInput.disabled = !state.enabled;
 
-        if (state.period === "lifetime") {
-          counterPrimary.textContent = String(state.spentLifetime);
+        if (state.period === "total") {
+          counterPrimary.textContent = String(state.spentTotal);
           counterSecondary.style.display = "none";
         } else {
           counterPrimary.textContent = String(state.spentToday);
@@ -314,7 +314,7 @@
           btn.disabled = !state.enabled;
         });
 
-        resetBtn.style.display = state.period === "lifetime" ? "inline-flex" : "none";
+        resetBtn.style.display = state.period === "total" ? "inline-flex" : "none";
         resetBtn.disabled = !state.enabled;
       }
 
@@ -325,9 +325,9 @@
           return;
         }
 
-        if (state.period === "lifetime" && parsed <= state.spentLifetime) {
+        if (state.period === "total" && parsed <= state.spentTotal) {
           const proceed = window.confirm(
-            "New cap is lower or equal to already spent lifetime clicks. Cap will be reached immediately. Continue?"
+            "New cap is lower or equal to already spent total clicks. Cap will be reached immediately. Continue?"
           );
           if (!proceed) {
             globalCapInput.value = String(state.capValue);
@@ -367,9 +367,9 @@
       });
 
       resetBtn.addEventListener("click", () => {
-        if (!state.enabled || state.period !== "lifetime") return;
-        state.spentLifetime = 0;
-        capWarning.textContent = "Lifetime counter was reset.";
+        if (!state.enabled || state.period !== "total") return;
+        state.spentTotal = 0;
+        capWarning.textContent = "Total counter was reset.";
         render();
       });
 
