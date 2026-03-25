@@ -35,7 +35,7 @@ You can run the detector using real data export from your DB.
 
 File: `data/history.csv` (or `.json`)
 
-Required columns:
+Canonical columns:
 - `offer_id`
 - `geo`
 - `day_of_week` (Monday=0 ... Sunday=6)
@@ -43,11 +43,14 @@ Required columns:
 - `hits_10m`
 - `clicks_10m`
 
+You can skip `day_of_week` + `slot_10m` if your export has timestamp field
+(`timestamp`/`event_time`/`created_at`/`datetime`/`time`).
+
 ### 2) Prepare current snapshot file
 
 File: `data/snapshot.csv` (or `.json`)
 
-Required columns:
+Canonical columns:
 - `offer_id`
 - `offer_name`
 - `geo`
@@ -60,6 +63,16 @@ Required columns:
 
 Optional column:
 - `declines_cap_reason_10m` (defaults to `0`)
+
+Also supports common aliases (examples):
+- `offerId` -> `offer_id`
+- `country` -> `geo`
+- `dow` -> `day_of_week`
+- `slot` -> `slot_10m`
+- `hits` -> `hits_10m`
+- `clicks` -> `clicks_10m`
+- `cap_used` -> `cap_counter`
+- `cap` -> `cap_limit`
 
 ### 3) (Optional) manager mapping
 
