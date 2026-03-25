@@ -4,22 +4,27 @@ import { Pencil, RotateCcw } from "lucide-react";
 type PeriodMode = "daily" | "hourly" | "lifetime";
 type ActionMode = "exclude" | "return";
 
-interface FrequencyCapState {
+interface CapSettingsState {
   enabled: boolean;
   globalCap: string;
   period: PeriodMode;
   action: ActionMode;
+  capReachedImmediately: boolean;
 }
 
-interface FrequencyCapCardProps {
+interface CapSettingsCardProps {
   className?: string;
   initialEnabled?: boolean;
   initialGlobalCap?: number | string;
   initialPeriod?: PeriodMode;
   initialAction?: ActionMode;
-  counters?: [number, number];
-  onChange?: (nextState: FrequencyCapState) => void;
-  onEdit?: () => void;
+  // For DAILY/HOURLY modes
+  todayClicks?: number;
+  yesterdayClicks?: number;
+  // For LIFETIME mode
+  lifetimeClicks?: number;
+  onChange?: (nextState: CapSettingsState) => void;
+  onEdit?: (nextCap: number) => void;
   onResetLifetime?: () => void;
 }
 
@@ -45,31 +50,71 @@ function segmentedButtonClasses(active: boolean) {
   }`;
 }
 
-export default function FrequencyCapCard({
+export default function CapSettingsCard({
   className = "",
   initialEnabled = false,
   initialGlobalCap = "470",
   initialPeriod = "daily",
   initialAction = "exclude",
-  counters = [473, 471],
+  todayClicks = 473,
+  yesterdayClicks = 471,
+  lifetimeClicks = 800,
   onChange,
   onEdit,
   onResetLifetime,
-}: FrequencyCapCardProps) {
+}: CapSettingsCardProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [globalCap, setGlobalCap] = useState(String(initialGlobalCap));
+  const [savedCap, setSavedCap] = useState(String(initialGlobalCap));
   const [period, setPeriod] = useState<PeriodMode>(initialPeriod);
   const [action, setAction] = useState<ActionMode>(initialAction);
+  const [capReachedImmediately, setCapReachedImmediately] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
 
   useEffect(() => {
-    onChange?.({ enabled, globalCap, period, action });
-  }, [enabled, globalCap, period, action, onChange]);
+    onChange?.({ enabled, globalCap, period, action, capReachedImmediately });
+  }, [enabled, globalCap, period, action, capReachedImmediately, onChange]);
 
   const disabledUI = !enabled;
 
   const handleLifetimeReset = () => {
     onResetLifetime?.();
-    setGlobalCap("");
+    setWarningMessage("Lifetime counter was reset.");
+  };
+
+  const tryApplyCapValue = (rawValue: string) => {
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setWarningMessage("Global Cap must be a positive number.");
+      return;
+    }
+
+    if (period === "lifetime" && parsed <= lifetimeClicks) {
+      const proceed = window.confirm(
+        "You set cap below current spent clicks. Traffic will be stopped immediately. Continue?"
+      );
+      if (!proceed) {
+        setGlobalCap(savedCap);
+        return;
+      }
+
+      setCapReachedImmediately(true);
+      setWarningMessage(
+        "Cap reached immediately. New clicks are blocked by selected action."
+      );
+      const nextCap = String(parsed);
+      setGlobalCap(nextCap);
+      setSavedCap(nextCap);
+      onEdit?.(parsed);
+      return;
+    }
+
+    setCapReachedImmediately(false);
+    setWarningMessage("");
+    const nextCap = String(parsed);
+    setGlobalCap(nextCap);
+    setSavedCap(nextCap);
+    onEdit?.(parsed);
   };
 
   return (
@@ -81,7 +126,7 @@ export default function FrequencyCapCard({
           type="button"
           role="switch"
           aria-checked={enabled}
-          aria-label="Toggle Frequency Cap"
+          aria-label="Toggle Cap Settings"
           onClick={() => setEnabled((prev) => !prev)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${
             enabled
@@ -95,7 +140,7 @@ export default function FrequencyCapCard({
             }`}
           />
         </button>
-        <span className="text-sm font-medium text-slate-600">Frequency Cap</span>
+        <span className="text-sm font-medium text-slate-600">Cap Settings</span>
       </div>
 
       <div className={disabledUI ? "opacity-60" : ""}>
@@ -112,13 +157,27 @@ export default function FrequencyCapCard({
             type="number"
             value={globalCap}
             onChange={(event) => setGlobalCap(event.target.value)}
+            onBlur={() => {
+              if (disabledUI) return;
+              tryApplyCapValue(globalCap);
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || disabledUI) return;
+              tryApplyCapValue(globalCap);
+            }}
             disabled={disabledUI}
             className="h-11 w-full rounded border border-slate-300 bg-white px-3 pr-44 text-base text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed"
           />
 
           <div className="absolute inset-y-0 right-16 flex items-center gap-2 text-sm font-semibold text-red-500">
-            <span>{counters[0]}</span>
-            <span>{counters[1]}</span>
+            {period === "lifetime" ? (
+              <span>{lifetimeClicks}</span>
+            ) : (
+              <>
+                <span>{todayClicks}</span>
+                <span>{yesterdayClicks}</span>
+              </>
+            )}
           </div>
 
           <div className="absolute inset-y-0 right-3 flex items-center gap-1">
@@ -137,7 +196,7 @@ export default function FrequencyCapCard({
 
             <button
               type="button"
-              onClick={onEdit}
+              onClick={() => tryApplyCapValue(globalCap)}
               disabled={disabledUI}
               className="rounded p-1 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 disabled:cursor-not-allowed"
               aria-label="Edit global cap"
@@ -147,6 +206,7 @@ export default function FrequencyCapCard({
             </button>
           </div>
         </div>
+        <p className="mt-2 min-h-4 text-xs text-red-600">{warningMessage}</p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <div className="inline-flex overflow-hidden rounded border border-slate-200">
@@ -155,7 +215,11 @@ export default function FrequencyCapCard({
                 key={mode.value}
                 type="button"
                 disabled={disabledUI}
-                onClick={() => setPeriod(mode.value)}
+                onClick={() => {
+                  setPeriod(mode.value);
+                  setWarningMessage("");
+                  setCapReachedImmediately(false);
+                }}
                 className={segmentedButtonClasses(period === mode.value)}
               >
                 {mode.label}

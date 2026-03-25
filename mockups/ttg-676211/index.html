@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TTG-676211 — Frequency Cap (DAILY/HOURLY/LIFETIME)</title>
+    <title>TTG-676211 — Cap Settings (DAILY/HOURLY/LIFETIME)</title>
     <style>
       :root {
         --bg-page: #e9eef7;
@@ -136,6 +136,13 @@
         letter-spacing: 0.2px;
       }
 
+      .warning {
+        margin-top: 8px;
+        font-size: 11px;
+        color: #c0392b;
+        min-height: 14px;
+      }
+
       .icon-btn {
         width: 18px;
         height: 18px;
@@ -201,10 +208,10 @@
   </head>
   <body>
     <div class="page">
-      <section class="card" id="frequencyCard">
+      <section class="card" id="capSettingsCard">
         <div class="top-row">
-          <button class="toggle" id="toggleCap" aria-label="Frequency Cap toggle"></button>
-          <span class="title">Frequency Cap</span>
+          <button class="toggle" id="toggleCap" aria-label="Cap settings toggle"></button>
+          <span class="title">Cap Settings</span>
         </div>
 
         <div class="content">
@@ -212,8 +219,8 @@
           <div class="input-wrap">
             <input class="global-input" id="globalCapInput" type="number" value="470" />
             <div class="right-overlay">
-              <span class="counter">473</span>
-              <span class="counter">471</span>
+              <span class="counter" id="counterPrimary">473</span>
+              <span class="counter" id="counterSecondary">471</span>
 
               <button
                 type="button"
@@ -236,6 +243,7 @@
               </button>
             </div>
           </div>
+          <div class="warning" id="capWarning"></div>
 
           <div class="controls">
             <div class="group" id="periodGroup">
@@ -257,21 +265,44 @@
       const state = {
         enabled: false,
         period: "daily",
-        action: "exclude"
+        action: "exclude",
+        capValue: 470,
+        spentToday: 473,
+        spentYesterday: 471,
+        spentLifetime: 800
       };
 
-      const card = document.getElementById("frequencyCard");
+      const card = document.getElementById("capSettingsCard");
       const toggle = document.getElementById("toggleCap");
       const globalCapInput = document.getElementById("globalCapInput");
       const periodGroup = document.getElementById("periodGroup");
       const actionGroup = document.getElementById("actionGroup");
       const resetBtn = document.getElementById("resetBtn");
+      const editBtn = document.getElementById("editBtn");
+      const counterPrimary = document.getElementById("counterPrimary");
+      const counterSecondary = document.getElementById("counterSecondary");
+      const capWarning = document.getElementById("capWarning");
+
+      function currentSpent() {
+        if (state.period === "lifetime") return state.spentLifetime;
+        return state.spentToday;
+      }
 
       function render() {
         toggle.classList.toggle("is-on", state.enabled);
         card.classList.toggle("is-disabled", !state.enabled);
 
+        globalCapInput.value = String(state.capValue);
         globalCapInput.disabled = !state.enabled;
+
+        if (state.period === "lifetime") {
+          counterPrimary.textContent = String(state.spentLifetime);
+          counterSecondary.style.display = "none";
+        } else {
+          counterPrimary.textContent = String(state.spentToday);
+          counterSecondary.textContent = String(state.spentYesterday);
+          counterSecondary.style.display = "inline";
+        }
 
         [...periodGroup.querySelectorAll(".btn")].forEach((btn) => {
           btn.classList.toggle("active", btn.dataset.period === state.period);
@@ -287,6 +318,34 @@
         resetBtn.disabled = !state.enabled;
       }
 
+      function tryApplyCapValue(rawValue) {
+        const parsed = Number(rawValue);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          capWarning.textContent = "Global Cap must be a positive number.";
+          return;
+        }
+
+        if (state.period === "lifetime" && parsed <= state.spentLifetime) {
+          const proceed = window.confirm(
+            "New cap is lower or equal to already spent lifetime clicks. Cap will be reached immediately. Continue?"
+          );
+          if (!proceed) {
+            globalCapInput.value = String(state.capValue);
+            return;
+          }
+
+          capWarning.textContent =
+            "Cap reached immediately after update. New clicks are blocked by selected action.";
+          state.capValue = parsed;
+          render();
+          return;
+        }
+
+        capWarning.textContent = "";
+        state.capValue = parsed;
+        render();
+      }
+
       toggle.addEventListener("click", () => {
         state.enabled = !state.enabled;
         render();
@@ -296,6 +355,7 @@
         const btn = event.target.closest(".btn");
         if (!btn || !state.enabled) return;
         state.period = btn.dataset.period;
+        capWarning.textContent = "";
         render();
       });
 
@@ -308,7 +368,25 @@
 
       resetBtn.addEventListener("click", () => {
         if (!state.enabled || state.period !== "lifetime") return;
-        globalCapInput.value = "";
+        state.spentLifetime = 0;
+        capWarning.textContent = "Lifetime counter was reset.";
+        render();
+      });
+
+      editBtn.addEventListener("click", () => {
+        if (!state.enabled) return;
+        tryApplyCapValue(globalCapInput.value);
+      });
+
+      globalCapInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        if (!state.enabled) return;
+        tryApplyCapValue(globalCapInput.value);
+      });
+
+      globalCapInput.addEventListener("blur", () => {
+        if (!state.enabled) return;
+        tryApplyCapValue(globalCapInput.value);
       });
 
       render();
