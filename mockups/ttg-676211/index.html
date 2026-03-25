@@ -208,24 +208,34 @@
   </head>
   <body>
     <div class="page">
-      <section class="card" id="capSettingsCard">
+      <section
+        class="card cap-settings-card"
+        data-cap-card
+        data-enabled="false"
+        data-period="daily"
+        data-action="exclude"
+        data-cap-value="470"
+        data-spent-today="473"
+        data-spent-yesterday="471"
+        data-spent-total="800"
+      >
         <div class="top-row">
-          <button class="toggle" id="toggleCap" aria-label="Cap settings toggle"></button>
+          <button class="toggle" data-role="toggle" aria-label="Cap settings toggle"></button>
           <span class="title">Cap Settings</span>
         </div>
 
         <div class="content">
           <div class="label">Global Cap</div>
           <div class="input-wrap">
-            <input class="global-input" id="globalCapInput" type="number" value="470" />
+            <input class="global-input" data-role="cap-input" type="number" value="470" />
             <div class="right-overlay">
-              <span class="counter" id="counterPrimary">473</span>
-              <span class="counter" id="counterSecondary">471</span>
+              <span class="counter" data-role="counter-primary">473</span>
+              <span class="counter" data-role="counter-secondary">471</span>
 
               <button
                 type="button"
                 class="icon-btn"
-                id="resetBtn"
+                data-role="reset-btn"
                 title="Reset total cap"
                 style="display: none"
               >
@@ -235,7 +245,7 @@
                 </svg>
               </button>
 
-              <button type="button" class="icon-btn" id="editBtn" title="Edit cap">
+              <button type="button" class="icon-btn" data-role="edit-btn" title="Edit cap">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
@@ -243,16 +253,16 @@
               </button>
             </div>
           </div>
-          <div class="warning" id="capWarning"></div>
+          <div class="warning" data-role="warning"></div>
 
           <div class="controls">
-            <div class="group" id="periodGroup">
+            <div class="group" data-role="period-group">
               <button class="btn active" data-period="daily">DAILY</button>
               <button class="btn" data-period="hourly">HOURLY</button>
               <button class="btn" data-period="total">TOTAL</button>
             </div>
 
-            <div class="group" id="actionGroup">
+            <div class="group" data-role="action-group">
               <button class="btn active" data-action="exclude">EXCLUDE</button>
               <button class="btn" data-action="return">RETURN</button>
             </div>
@@ -262,134 +272,131 @@
     </div>
 
     <script>
-      const state = {
-        enabled: false,
-        period: "daily",
-        action: "exclude",
-        capValue: 470,
-        spentToday: 473,
-        spentYesterday: 471,
-        spentTotal: 800
-      };
+      function initCapCard(card) {
+        const state = {
+          enabled: card.dataset.enabled === "true",
+          period: card.dataset.period || "daily",
+          action: card.dataset.action || "exclude",
+          capValue: Number(card.dataset.capValue || 470),
+          spentToday: Number(card.dataset.spentToday || 473),
+          spentYesterday: Number(card.dataset.spentYesterday || 471),
+          spentTotal: Number(card.dataset.spentTotal || 800)
+        };
 
-      const card = document.getElementById("capSettingsCard");
-      const toggle = document.getElementById("toggleCap");
-      const globalCapInput = document.getElementById("globalCapInput");
-      const periodGroup = document.getElementById("periodGroup");
-      const actionGroup = document.getElementById("actionGroup");
-      const resetBtn = document.getElementById("resetBtn");
-      const editBtn = document.getElementById("editBtn");
-      const counterPrimary = document.getElementById("counterPrimary");
-      const counterSecondary = document.getElementById("counterSecondary");
-      const capWarning = document.getElementById("capWarning");
+        const toggle = card.querySelector('[data-role="toggle"]');
+        const capInput = card.querySelector('[data-role="cap-input"]');
+        const periodGroup = card.querySelector('[data-role="period-group"]');
+        const actionGroup = card.querySelector('[data-role="action-group"]');
+        const resetBtn = card.querySelector('[data-role="reset-btn"]');
+        const editBtn = card.querySelector('[data-role="edit-btn"]');
+        const counterPrimary = card.querySelector('[data-role="counter-primary"]');
+        const counterSecondary = card.querySelector('[data-role="counter-secondary"]');
+        const warning = card.querySelector('[data-role="warning"]');
 
-      function currentSpent() {
-        if (state.period === "total") return state.spentTotal;
-        return state.spentToday;
-      }
+        function render() {
+          toggle.classList.toggle("is-on", state.enabled);
+          card.classList.toggle("is-disabled", !state.enabled);
 
-      function render() {
-        toggle.classList.toggle("is-on", state.enabled);
-        card.classList.toggle("is-disabled", !state.enabled);
+          capInput.value = String(state.capValue);
+          capInput.disabled = !state.enabled;
 
-        globalCapInput.value = String(state.capValue);
-        globalCapInput.disabled = !state.enabled;
+          if (state.period === "total") {
+            counterPrimary.textContent = String(state.spentTotal);
+            counterSecondary.style.display = "none";
+          } else {
+            counterPrimary.textContent = String(state.spentToday);
+            counterSecondary.textContent = String(state.spentYesterday);
+            counterSecondary.style.display = "inline";
+          }
 
-        if (state.period === "total") {
-          counterPrimary.textContent = String(state.spentTotal);
-          counterSecondary.style.display = "none";
-        } else {
-          counterPrimary.textContent = String(state.spentToday);
-          counterSecondary.textContent = String(state.spentYesterday);
-          counterSecondary.style.display = "inline";
+          [...periodGroup.querySelectorAll(".btn")].forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.period === state.period);
+            btn.disabled = !state.enabled;
+          });
+
+          [...actionGroup.querySelectorAll(".btn")].forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.action === state.action);
+            btn.disabled = !state.enabled;
+          });
+
+          resetBtn.style.display = state.period === "total" ? "inline-flex" : "none";
+          resetBtn.disabled = !state.enabled;
         }
 
-        [...periodGroup.querySelectorAll(".btn")].forEach((btn) => {
-          btn.classList.toggle("active", btn.dataset.period === state.period);
-          btn.disabled = !state.enabled;
-        });
-
-        [...actionGroup.querySelectorAll(".btn")].forEach((btn) => {
-          btn.classList.toggle("active", btn.dataset.action === state.action);
-          btn.disabled = !state.enabled;
-        });
-
-        resetBtn.style.display = state.period === "total" ? "inline-flex" : "none";
-        resetBtn.disabled = !state.enabled;
-      }
-
-      function tryApplyCapValue(rawValue) {
-        const parsed = Number(rawValue);
-        if (!Number.isFinite(parsed) || parsed <= 0) {
-          capWarning.textContent = "Global Cap must be a positive number.";
-          return;
-        }
-
-        if (state.period === "total" && parsed <= state.spentTotal) {
-          const proceed = window.confirm(
-            "New cap is lower or equal to already spent total clicks. Cap will be reached immediately. Continue?"
-          );
-          if (!proceed) {
-            globalCapInput.value = String(state.capValue);
+        function tryApplyCapValue(rawValue) {
+          const parsed = Number(rawValue);
+          if (!Number.isFinite(parsed) || parsed <= 0) {
+            warning.textContent = "Global Cap must be a positive number.";
             return;
           }
 
-          capWarning.textContent =
-            "Cap reached immediately after update. New clicks are blocked by selected action.";
+          if (state.period === "total" && parsed <= state.spentTotal) {
+            const proceed = window.confirm(
+              "New cap is lower or equal to already spent total clicks. Cap will be reached immediately. Continue?"
+            );
+            if (!proceed) {
+              capInput.value = String(state.capValue);
+              return;
+            }
+
+            warning.textContent =
+              "Cap reached immediately after update. New clicks are blocked by selected action.";
+            state.capValue = parsed;
+            render();
+            return;
+          }
+
+          warning.textContent = "";
           state.capValue = parsed;
           render();
-          return;
         }
 
-        capWarning.textContent = "";
-        state.capValue = parsed;
+        toggle.addEventListener("click", () => {
+          state.enabled = !state.enabled;
+          render();
+        });
+
+        periodGroup.addEventListener("click", (event) => {
+          const btn = event.target.closest(".btn");
+          if (!btn || !state.enabled) return;
+          state.period = btn.dataset.period;
+          warning.textContent = "";
+          render();
+        });
+
+        actionGroup.addEventListener("click", (event) => {
+          const btn = event.target.closest(".btn");
+          if (!btn || !state.enabled) return;
+          state.action = btn.dataset.action;
+          render();
+        });
+
+        resetBtn.addEventListener("click", () => {
+          if (!state.enabled || state.period !== "total") return;
+          state.spentTotal = 0;
+          warning.textContent = "Total counter was reset.";
+          render();
+        });
+
+        editBtn.addEventListener("click", () => {
+          if (!state.enabled) return;
+          tryApplyCapValue(capInput.value);
+        });
+
+        capInput.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" || !state.enabled) return;
+          tryApplyCapValue(capInput.value);
+        });
+
+        capInput.addEventListener("blur", () => {
+          if (!state.enabled) return;
+          tryApplyCapValue(capInput.value);
+        });
+
         render();
       }
 
-      toggle.addEventListener("click", () => {
-        state.enabled = !state.enabled;
-        render();
-      });
-
-      periodGroup.addEventListener("click", (event) => {
-        const btn = event.target.closest(".btn");
-        if (!btn || !state.enabled) return;
-        state.period = btn.dataset.period;
-        capWarning.textContent = "";
-        render();
-      });
-
-      actionGroup.addEventListener("click", (event) => {
-        const btn = event.target.closest(".btn");
-        if (!btn || !state.enabled) return;
-        state.action = btn.dataset.action;
-        render();
-      });
-
-      resetBtn.addEventListener("click", () => {
-        if (!state.enabled || state.period !== "total") return;
-        state.spentTotal = 0;
-        capWarning.textContent = "Total counter was reset.";
-        render();
-      });
-
-      editBtn.addEventListener("click", () => {
-        if (!state.enabled) return;
-        tryApplyCapValue(globalCapInput.value);
-      });
-
-      globalCapInput.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter") return;
-        if (!state.enabled) return;
-        tryApplyCapValue(globalCapInput.value);
-      });
-
-      globalCapInput.addEventListener("blur", () => {
-        if (!state.enabled) return;
-        tryApplyCapValue(globalCapInput.value);
-      });
-
-      render();
+      document.querySelectorAll("[data-cap-card]").forEach(initCapCard);
     </script>
   </body>
   </html>
